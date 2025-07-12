@@ -1,0 +1,308 @@
+<!--
+  †闇に包まれし2000年代初頭の個人サイト風HTML†
+  ～このテトリス聖域に迷い込んだ貴方へ～
+  - テーブル多重入れ子の魔術
+  - 原色・ポップ体タイトル画像という名の光
+  - レガシーJS/CSSの古代魔法
+  - BGM付きテトリスという名の闇
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>†YURU TETRIS† - VSCode拡張機能の聖域</title>
+  <!--†タイル背景という名の闇† -->
+  <style type="text/css">
+    body {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGElEQVQYV2NkQAKyEGkUUQnNjMGOYqgAAMgYAQEwx5wJAAAAAElFTkSuQmCC');
+      background-repeat: repeat;
+      margin: 0;
+      padding: 0;
+      font-family: "MS PGothic", Osaka, monospace;
+    }
+    /* 虹色罫線風 */
+    .rainbow {
+      border: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #ff0000 0%, #ff9900 20%, #ffff00 40%, #00ff00 60%, #0000ff 80%, #9900ff 100%);
+    }
+    /* 点滅 */
+    .blink {
+      animation: blink 0.7s steps(1, start) infinite;
+      -webkit-animation: blink 0.7s steps(1, start) infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+    @-webkit-keyframes blink {
+      50% { opacity: 0; }
+    }
+    /* バナー横並び */
+    .banners { line-height: 0; }
+    .banners img { margin-right: 8px; }
+    /* キラキラ */
+    .star {
+      position: absolute;
+      pointer-events: none;
+      width: 16px; 
+      height: 16px;
+      background: url('data:image/gif;base64,R0lGODlhEAAQAPQAAP///wAAAMLCwkJCQgAAAFhYWFpaWgAAAGZmZgAAAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAEAABAAIf8LTkVUU0NBUEUyLjADAQAAACwAAAAAEAAQAAAFLCAmjmRpnmiqrmzrvnAsz3Rt33iu73DAQA') no-repeat;
+      opacity: 1;
+      transition: opacity 0.7s linear;
+      z-index: 9999;
+    }
+    /* アンチエイリアス無効化（font-smoothing off） */
+    body, table, td, th, span, a, h1, h2, h3, h4, h5, h6 {
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: unset;
+      font-smooth: never;
+      text-rendering: optimizeSpeed;
+    }
+    /* テトリスブロック風装飾 */
+    .tetris-block {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #000;
+      margin: 1px;
+      vertical-align: middle;
+    }
+    .block-i { background-color: #00FFFF; }
+    .block-o { background-color: #FFFF00; }
+    .block-t { background-color: #800080; }
+    .block-s { background-color: #00FF00; }
+    .block-z { background-color: #FF0000; }
+    .block-j { background-color: #0000FF; }
+    .block-l { background-color: #FFA500; }
+  </style>
+  <script type="text/javascript">
+    // †右クリック禁止～聖域を守る結界～†
+    document.addEventListener('contextmenu', function(e) {
+      alert('†右クリック禁止！テトリス聖域を汚すなかれ†');
+      e.preventDefault();
+    });
+    
+    // †キラキラエフェクト～魂の軌跡～†
+    document.addEventListener('mousemove', function(e) {
+      var star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = (e.pageX - 8) + 'px';
+      star.style.top = (e.pageY - 8) + 'px';
+      document.body.appendChild(star);
+      setTimeout(function() {
+        star.style.opacity = 0;
+        setTimeout(function() { star.parentNode && star.parentNode.removeChild(star); }, 700);
+      }, 10);
+    });
+    
+    // †カウンター（ダミー）～選ばれし者の記録～†
+    function updateCounter() {
+      var c = localStorage.getItem('tetris-counter') || 1337;
+      c = parseInt(c, 10) + 1;
+      localStorage.setItem('tetris-counter', c);
+      document.getElementById('counter').innerText = c;
+    }
+    
+    // †テトリスブロック雨～降りしきる魂の欠片～†
+    function createFallingBlock() {
+      var colors = ['block-i', 'block-o', 'block-t', 'block-s', 'block-z', 'block-j', 'block-l'];
+      var block = document.createElement('div');
+      block.className = 'tetris-block ' + colors[Math.floor(Math.random() * colors.length)];
+      block.style.position = 'fixed';
+      block.style.left = Math.random() * window.innerWidth + 'px';
+      block.style.top = '-20px';
+      block.style.zIndex = '1';
+      block.style.pointerEvents = 'none';
+      document.body.appendChild(block);
+      
+      var fallSpeed = 1 + Math.random() * 2;
+      var interval = setInterval(function() {
+        var top = parseFloat(block.style.top);
+        if (top > window.innerHeight) {
+          clearInterval(interval);
+          block.parentNode && block.parentNode.removeChild(block);
+        } else {
+          block.style.top = top + fallSpeed + 'px';
+        }
+      }, 20);
+    }
+    
+    window.onload = function() {
+      updateCounter();
+      // テトリスブロックを定期的に降らせる
+      setInterval(createFallingBlock, 2000);
+    };
+  </script>
+</head>
+<body>
+<!--†メイン外枠テーブル～聖域の境界線～† -->
+<table width="800" align="center" cellpadding="0" cellspacing="0" border="0" style="background:#fff;">
+<tr><td>
+  <!-- †タイトル部～光の紋章～† -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center" style="padding:12px 0 4px 0;">
+      <!-- †ポップ体風タイトル画像（SVG埋め込み）～魂の名前～† -->
+      <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='80'><defs><filter id='f1' x='0' y='0'><feOffset result='offOut' in='SourceAlpha' dx='3' dy='3'/><feGaussianBlur result='blurOut' in='offOut' stdDeviation='2'/><feBlend in='SourceGraphic' in2='blurOut' mode='normal'/></filter></defs><rect width='500' height='80' fill='none'/><text x='50%' y='60%' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='38' font-weight='bold' fill='%23ff0000' stroke='%23000000' stroke-width='3' filter='url(%23f1)'>†YURU TETRIS†</text><text x='50%' y='60%' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='38' font-weight='bold' fill='%23ffff00' stroke='%23000000' stroke-width='0' dx='3' dy='3'>†YURU TETRIS†</text></svg>" alt="†YURU TETRIS†" width="500" height="80">
+    </td></tr>
+  </table>
+  
+  <!-- †虹色罫線～七色の結界～† -->
+  <tr><td><hr class="rainbow" noshade size="6"></td></tr>
+  
+  <!-- †メインコンテンツテーブル～聖域の中心部～† -->
+  <tr><td>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <!-- †左サイド：メニュー～導きの間～† -->
+        <td width="200" valign="top" style="border-right:6px solid #00ff00; background:#e0ffe0;">
+          <table width="100%" cellpadding="2" cellspacing="0" border="0">
+            <tr><td align="center" style="padding:8px 0;">
+              <div class="tetris-block block-i"></div><div class="tetris-block block-o"></div><div class="tetris-block block-t"></div><br>
+              <span style="font-size:13px; color:#ff0000; font-weight:bold;">†BGM付きテトリス†</span>
+            </td></tr>
+            
+            <tr><td align="center" style="padding:8px 0;">
+              <img src="data:image/gif;base64,R0lGODlhPAAeAPABAP//AAAAA/" alt="NEW!!" width="60" height="20" style="background:red; color:white; text-align:center; line-height:20px; font-weight:bold;"><br>
+              <a href="#install" style="color:#0000ff; font-size:13px;">†拡張機能導入†</a>
+            </td></tr>
+            
+            <tr><td align="center" style="padding:8px 0;">
+              <a href="#features" style="color:#ff00ff;">★魂の機能一覧★</a><br>
+              <a href="#controls" style="color:#00ccff;">†操作方法の聖域†</a><br>
+              <a href="#bgm" style="color:#ff9900;">★音楽の軌跡★</a><br>
+              <a href="#github" style="color:#ff0000;">†GitHubの闇†</a>
+            </td></tr>
+            
+            <tr><td align="center" style="padding:8px 0;">
+              <span style="font-size:12px; color:#666;">VSCode Extensions:</span><br>
+              <div class="tetris-block block-s"></div><div class="tetris-block block-z"></div><br>
+              <div class="tetris-block block-j"></div><div class="tetris-block block-l"></div>
+            </td></tr>
+          </table>
+        </td>
+        
+        <!--†右メイン～魂の表現の場～† -->
+        <td valign="top" style="background:#fff;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr><td align="center" style="padding:8px 0;">
+              <!-- †marquee点滅～歓迎の儀式～† -->
+              <marquee scrollamount="8" direction="left"><span class="blink" style="font-size:22px; color:#ff00ff; font-weight:bold; text-shadow:2px 2px 0 #0000ff, 0 0 6px #fff;">ようこそ†YURU TETRIS†の聖域へ★VSCode内でテトリスを楽しむのです★</span></marquee>
+            </td></tr>
+            
+            <tr><td align="center" style="padding:8px 0;">
+              <!-- †カウンター～選ばれし者の記録～† -->
+              <span style="font-size:16px; color:#0000ff; font-weight:bold;">汝は <span id="counter">1338</span> 人目のテトリスマスターです。</span><br>
+              <span style="font-size:12px; color:#ff0000; font-weight:bold;">†ハイスコアの踏み逃げ禁止！必ずスクショを報告するのです†</span>
+            </td></tr>
+            
+            <tr><td style="padding:20px;">
+              <h2 id="features" style="color:#ff0000; font-size:18px; border-bottom:2px solid #ff0000;">★†機能紹介†★</h2>
+              <ul style="color:#333; line-height:1.8;">
+                <li><strong>🎮 完全なテトリスゲーム:</strong> 7種類のテトリミノ（I、O、T、S、Z、J、L）</li>
+                <li><strong>🎵 BGM機能:</strong> suno.bgm.mp3による没入感MAX</li>
+                <li><strong>🎯 本格ゲームシステム:</strong> スコア、レベル、ライン消去</li>
+                <li><strong>✨ VSCode完全統合:</strong> コマンドパレットから即起動</li>
+                <li><strong>🎨 美しいUI:</strong> VSCodeテーマに完全対応</li>
+                <li><strong>🔧 自動化対応:</strong> ワンクリックビルド＆インストール</li>
+              </ul>
+              
+              <h2 id="controls" style="color:#00ff00; font-size:18px; border-bottom:2px solid #00ff00;">★†操作方法†★</h2>
+              <table style="width:100%; color:#333; border:2px solid #ccc;">
+                <tr style="background:#f0f0f0;">
+                  <td style="padding:8px; border:1px solid #ccc; font-weight:bold;">キー</td>
+                  <td style="padding:8px; border:1px solid #ccc; font-weight:bold;">動作</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px; border:1px solid #ccc;">← →</td>
+                  <td style="padding:8px; border:1px solid #ccc;">ピースを左右に移動</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px; border:1px solid #ccc;">↑</td>
+                  <td style="padding:8px; border:1px solid #ccc;">ピースを回転</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px; border:1px solid #ccc;">↓</td>
+                  <td style="padding:8px; border:1px solid #ccc;">ソフトドロップ</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px; border:1px solid #ccc;">Space</td>
+                  <td style="padding:8px; border:1px solid #ccc;">ハードドロップ</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px; border:1px solid #ccc;">P</td>
+                  <td style="padding:8px; border:1px solid #ccc;">ポーズ</td>
+                </tr>
+              </table>
+              
+              <h2 id="install" style="color:#ff00ff; font-size:18px; border-bottom:2px solid #ff00ff;">★†導入方法†★</h2>
+              <div style="background:#f8f8f8; padding:15px; border:3px solid #ff00ff; margin:10px 0;">
+                <p style="color:#333; font-weight:bold; margin:0 0 10px 0;">1. コマンドパレットを開く:</p>
+                <code style="background:#000; color:#0f0; padding:5px;">Ctrl+Shift+P</code>
+                
+                <p style="color:#333; font-weight:bold; margin:15px 0 10px 0;">2. テトリスゲームを起動:</p>
+                <code style="background:#000; color:#0f0; padding:5px;">Start Tetris Game</code>
+                
+                <p style="color:#333; font-weight:bold; margin:15px 0 10px 0;">3. 自動ビルド&インストール:</p>
+                <code style="background:#000; color:#0f0; padding:5px;">npm run install-utf8</code>
+              </div>
+              
+              <h2 id="bgm" style="color:#ffaa00; font-size:18px; border-bottom:2px solid #ffaa00;">★†BGM機能†★</h2>
+              <ul style="color:#333; line-height:1.8;">
+                <li><strong>🎵 自動再生:</strong> ゲーム開始と同時にBGM開始</li>
+                <li><strong>🎛️ 音量調整:</strong> スライダーで音量を自在にコントロール</li>
+                <li><strong>⏸️ 再生制御:</strong> Play/Pause/Stop機能完備</li>
+                <li><strong>🔄 ループ再生:</strong> エンドレスでテトリス体験</li>
+              </ul>
+            </td></tr>
+            
+            <tr><td align="center" style="padding:8px 0;">
+              <!-- †スクリーンショット的な何か～† -->
+              <div style="border:4px solid #000; background:#000; width:400px; height:300px; margin:0 auto; position:relative; overflow:hidden;">
+                <div style="color:#0f0; font-family:monospace; font-size:12px; padding:10px;">
+                  <div>Score: 12340</div>
+                  <div>Level: 3</div>
+                  <div>Lines: 15</div>
+                  <div style="margin-top:20px;">Next Piece:</div>
+                  <div style="margin-top:10px;">
+                    <div class="tetris-block block-t" style="display:inline-block;"></div>
+                    <div class="tetris-block block-t" style="display:inline-block;"></div>
+                    <div class="tetris-block block-t" style="display:inline-block;"></div>
+                  </div>
+                  <div>
+                    <div class="tetris-block" style="display:inline-block; background:transparent; border:none;"></div>
+                    <div class="tetris-block block-t" style="display:inline-block;"></div>
+                  </div>
+                  <div style="margin-top:20px; color:#ff0;">🎵 BGM: Playing...</div>
+                  <div style="margin-top:5px; color:#fff;">Volume: 30%</div>
+                </div>
+              </div>
+              <p style="color:#888; font-size:12px;">†実際のゲーム画面（イメージ）†</p>
+            </td></tr>
+            
+            <tr><td align="center" style="padding:8px 0;">
+              <!-- †GitHubリンク～闇のソースコード～† -->
+              <h2 id="github" style="color:#ff0000; font-size:18px;">★†闇のソースコード†★</h2>
+              <a href="https://github.com/bonsai/yuruteto/" target="_blank" style="color:#0000ff; font-size:16px; text-decoration:underline; font-weight:bold;">
+                † GitHub Repository †
+              </a>
+              <br>
+              <span style="font-size:12px; color:#666;">※フォーク・スター・イシュー報告歓迎なのです</span>
+            </td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+  
+  <!-- †フッター～聖域の封印～† -->
+  <tr><td><hr class="rainbow" noshade size="6"></td></tr>
+  <tr><td align="center" style="font-size:12px; color:#888; padding:8px;">
+    (C) 2025 †YURU TETRIS for VSCode†<br />
+    この聖域は原則リンクフリーだったりします。テトリスのご連絡も不要なのです。<br />
+    ★テトリスマスターより愛を込めて★
+  </td></tr>
+</td></tr>
+</table>
+<!-- †ここまで～聖域の終わり～† -->
+</body>
+</html>
